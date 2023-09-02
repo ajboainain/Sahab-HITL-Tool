@@ -93,7 +93,7 @@ class Server(QtCore.QObject):
                 self.recievedData = ast.literal_eval(data.decode())
                 global channels
                 channels = self.recievedData
-                print(self.recievedData)
+                # print(self.recievedData)
             except:
                 self.recievedData = None    
         return
@@ -520,7 +520,7 @@ class Ui_MainWindow(object):
         print("closing")
         if (self.server is not None):
             self.handle_stop_start_server() # to close the server
-            time.sleep(1.5)
+            time.sleep(1)
         # if fc connection is still connected, disconnect
         
         QtCore.QCoreApplication.quit()
