@@ -458,6 +458,10 @@ class Ui_MainWindow(object):
         global com_ports
         if len(com_ports) == 0:
             return
+        if self.pushButton_com_connect.text() == "Disconnect":
+            self.fc_connection = None
+            self.pushButton_com_connect.setText("Connect")
+            return
         try:
             self.fc_connection = mavutil.mavlink_connection(
                 com_ports[self.comboBox_com.currentIndex()]
@@ -501,7 +505,8 @@ class Ui_MainWindow(object):
             #     break
             self.label_current_fc_status.setStyleSheet("background-color: green")
             self.label_current_fc_status.setText("Connected")
-            pass
+            self.pushButton_com_connect.setText("Disconnect")
+            
         except Exception as error:
             print(error)
             self.label_current_fc_status.setStyleSheet("background-color: red")
@@ -515,7 +520,6 @@ class Ui_MainWindow(object):
             dlg.exec_()
        
     
-    # TODO this isnt working. Must find a way to gracefully kill server on close event
     def close_application(self):
         print("closing")
         if (self.server is not None):
