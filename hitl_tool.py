@@ -413,11 +413,11 @@ class Ui_MainWindow(object):
     def update_channels(self):
         global channels
         for i, bar in enumerate(self.pwm_bars):
-            pwm = int(channels[i])
-            if self.fc_connection is not None:
-                self.fc_connection.set_servo(i+1, pwm)
+            pwm = int(channels[i])  
             if pwm == 0:
                 pwm = 1100
+            if self.fc_connection is not None:
+                self.fc_connection.set_servo(i+1, pwm)
             bar.setValue(pwm)
 
 
