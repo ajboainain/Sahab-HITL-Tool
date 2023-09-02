@@ -414,6 +414,8 @@ class Ui_MainWindow(object):
         global channels
         for i, bar in enumerate(self.pwm_bars):
             pwm = int(channels[i])
+            if self.fc_connection is not None:
+                self.fc_connection.set_servo(i+1, pwm)
             if pwm == 0:
                 pwm = 1100
             bar.setValue(pwm)
