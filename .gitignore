@@ -1,0 +1,9 @@
+venv/*
+hitl.ui
+qttest.py
+comport.py
+server.py
+test.py
+test3.py
+_pycache_
+_pycache_/*
