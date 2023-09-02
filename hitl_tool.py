@@ -15,8 +15,9 @@ import threading
 import serial.tools.list_ports
 import ast
 import time
+from pymavlink import mavutil
 
-
+com_ports = []
 channels = [
     1100,
     1100,
@@ -106,6 +107,7 @@ class Ui_MainWindow(object):
             QtCore.Qt.WindowTitleHint |
             QtCore.Qt.WindowMinimizeButtonHint 
         )
+        self.fc_connection = None
         self.pwm_bars = []
         self.server = None
         MainWindow.setObjectName("MainWindow")
@@ -398,7 +400,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.pushButton_com_refresh.clicked.connect(self.update_com_ports_combobox) # type: ignore
         self.pushButton_start_server.clicked.connect(self.handle_stop_start_server) # type: ignore
-        self.pushButton_com_connect.clicked.connect(self.update_current_fc_status) # type: ignore
+        self.pushButton_com_connect.clicked.connect(self.handle_fc_connection) # type: ignore
         self.pushButton_quit.clicked.connect(self.close_application) # type: ignore
 
         self.timer = QtCore.QTimer()
@@ -420,16 +422,25 @@ class Ui_MainWindow(object):
     def handle_stop_start_server(self):
         if self.lineEdit_port.text() == "":
             return
+
         if self.pushButton_start_server.text() == "Start":
-            try:
+            try:   
                 self.server = Server(int(self.lineEdit_port.text()))
                 self.server.start_recieving()
                 self.label_current_server_status.setText("Operational")
                 self.label_current_server_status.setStyleSheet("background-color: green")
                 self.pushButton_start_server.setText("Stop")
-            except:
-                self.label_current_server_status.setText("Failed")
-                self.label_current_server_status.setStyleSheet("background-color: red")
+            except Exception as error:
+                print(error)
+                self.label_current_fc_status.setStyleSheet("background-color: red")
+                self.label_current_fc_status.setText("Failed")
+                dlg = QtWidgets.QMessageBox()
+                # dlg.setIcon()
+                dlg.setWindowTitle("Error")
+                dlg.setText("Unable to connect to start server. Please try again.")
+                dlg.setDetailedText(str(error))
+                dlg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+                dlg.exec_()
             
         else:
             try:
@@ -442,10 +453,65 @@ class Ui_MainWindow(object):
             except:
                 pass
 
-    def update_current_fc_status(self):
-        # placeholders
-        self.label_current_fc_status.setStyleSheet("background-color: green")
-        self.label_current_fc_status.setText("Connected")
+    def handle_fc_connection(self):
+        global com_ports
+        if len(com_ports) == 0:
+            return
+        try:
+            self.fc_connection = mavutil.mavlink_connection(
+                com_ports[self.comboBox_com.currentIndex()]
+            )
+            self.fc_connection.wait_heartbeat()
+
+            # arm the plane
+            self.fc_connection.mav.command_long_send(
+                self.fc_connection.target_system,
+                self.fc_connection.target_component,
+                mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                0,
+                1, 0, 0, 0, 0, 0, 0
+            )
+
+            self.fc_connection.motors_armed_wait()
+
+            # Get mode ID
+            mode_id = self.fc_connection.mode_mapping()["MANUAL"]
+            # Set mode to manual
+            self.fc_connection.mav.set_mode_send(
+                self.fc_connection.target_system,
+                mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+                mode_id
+            )
+            # Find a better non-blocking way to do this. Separate thread?
+            # while True:
+            #     # Wait for ACK command
+            #     # Would be good to add mechanism to avoid endlessly blocking
+            #     # if the autopilot sends a NACK or never receives the message
+            #     ack_msg = self.fc_connection.recv_match(type='COMMAND_ACK', blocking=True)
+            #     ack_msg = ack_msg.to_dict()
+
+            #     # Continue waiting if the acknowledged command is not `set_mode`
+            #     if ack_msg['command'] != mavutil.mavlink.MAV_CMD_DO_SET_MODE:
+            #         continue
+
+            #     # Print the ACK result !
+            #     print(mavutil.mavlink.enums['MAV_RESULT'][ack_msg['result']].description)
+            #     print("Set to manual mode")
+            #     break
+            self.label_current_fc_status.setStyleSheet("background-color: green")
+            self.label_current_fc_status.setText("Connected")
+            pass
+        except Exception as error:
+            print(error)
+            self.label_current_fc_status.setStyleSheet("background-color: red")
+            self.label_current_fc_status.setText("Failed")
+            dlg = QtWidgets.QMessageBox()
+            # dlg.setIcon()
+            dlg.setWindowTitle("Error")
+            dlg.setText("Unable to connect to flight controller. Please try again.")
+            dlg.setDetailedText(str(error))
+            dlg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+            dlg.exec_()
        
     
     # TODO this isnt working. Must find a way to gracefully kill server on close event
@@ -463,9 +529,12 @@ class Ui_MainWindow(object):
 
     def update_com_ports_combobox(self):
         ports = serial.tools.list_ports.comports()
+        global com_ports
+        com_ports.clear()
         self.comboBox_com.clear()
         cube_index = None
         for index, port in enumerate(ports):
+            com_ports.append(port.name)
             self.comboBox_com.addItem(port.description)
             if ("cube" in port.description.lower()):
                 cube_index = index
