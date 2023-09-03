@@ -51,8 +51,8 @@ class Server(QtCore.QObject):
         self.update_fc_thread.start()
 
         self.receive_data_thread = threading.Thread(target=self.recieve_data)
-        
-        # self.s.setblocking(0)        
+
+        # self.s.setblocking(0)
         print("Starting a server")
         print("IP: " + str(self.HOST))
         print("Port: " + str(self.PORT))
@@ -61,7 +61,7 @@ class Server(QtCore.QObject):
         self.recievingData = True
         self.recievedData = None
         self.receive_data_thread.start()
-    
+
     def stop_recieving(self):
         self.recievingData = False
         self.update_fc_thread.join()
@@ -74,7 +74,7 @@ class Server(QtCore.QObject):
                 for i, pwm in enumerate(self.recievedData):
                     self.fc_connection.set_servo(i+1, pwm)
         return
-        
+
     def recieve_data(self):
         self.recievingData = True
         while self.recievingData:
@@ -95,7 +95,7 @@ class Server(QtCore.QObject):
                 channels = self.recievedData
                 # print(self.recievedData)
             except:
-                self.recievedData = None    
+                self.recievedData = None
         return
 
 class Ui_MainWindow(object):
@@ -105,7 +105,7 @@ class Ui_MainWindow(object):
             QtCore.Qt.Window |
             QtCore.Qt.CustomizeWindowHint |
             QtCore.Qt.WindowTitleHint |
-            QtCore.Qt.WindowMinimizeButtonHint 
+            QtCore.Qt.WindowMinimizeButtonHint
         )
         self.fc_connection = None
         self.pwm_bars = []
@@ -407,13 +407,13 @@ class Ui_MainWindow(object):
         self.timer.setInterval(200)
         self.timer.timeout.connect(self.update_channels)
         self.timer.start()
-        
+
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def update_channels(self):
         global channels
         for i, bar in enumerate(self.pwm_bars):
-            pwm = int(channels[i])  
+            pwm = int(channels[i])
             if pwm == 0:
                 pwm = 1100
             if self.fc_connection is not None:
@@ -426,7 +426,7 @@ class Ui_MainWindow(object):
             return
 
         if self.pushButton_start_server.text() == "Start":
-            try:   
+            try:
                 self.server = Server(int(self.lineEdit_port.text()))
                 self.server.start_recieving()
                 self.label_current_server_status.setText("Operational")
@@ -442,7 +442,7 @@ class Ui_MainWindow(object):
                 dlg.setDetailedText(str(error))
                 dlg.setStandardButtons(QtWidgets.QMessageBox.Ok)
                 dlg.exec_()
-            
+
         else:
             try:
                 self.server.stop_recieving()
@@ -461,12 +461,32 @@ class Ui_MainWindow(object):
         if self.pushButton_com_connect.text() == "Disconnect":
             self.fc_connection = None
             self.pushButton_com_connect.setText("Connect")
+            self.label_current_fc_status.setStyleSheet("")
+            self.label_current_fc_status.setText("Not Connected")
             return
         try:
+            print("here")
             self.fc_connection = mavutil.mavlink_connection(
                 com_ports[self.comboBox_com.currentIndex()]
             )
-            self.fc_connection.wait_heartbeat()
+            # self.fc_connection.wait_heartbeat()
+            print ("here 2")
+            # TODO fix FC connect/disconnect
+            msg = None
+            attempts = 0
+            while not msg:
+                self.fc_connection.mav.ping_send(
+                    int(time.time() * 1e6), # Unix time in microseconds
+                    0, # Ping number
+                    0, # Request ping of all systems
+                    0 # Request ping of all components
+                )
+                msg = self.fc_connection.recv_match()
+                attempts += 1
+                print(attempts)
+                if attempts == 3:
+                    raise Exception("Failed to connec to FC.")
+                time.sleep(0.5)
 
             # arm the plane
             self.fc_connection.mav.command_long_send(
@@ -506,11 +526,12 @@ class Ui_MainWindow(object):
             self.label_current_fc_status.setStyleSheet("background-color: green")
             self.label_current_fc_status.setText("Connected")
             self.pushButton_com_connect.setText("Disconnect")
-            
+
         except Exception as error:
             print(error)
             self.label_current_fc_status.setStyleSheet("background-color: red")
             self.label_current_fc_status.setText("Failed")
+            self.fc_connection = None
             dlg = QtWidgets.QMessageBox()
             dlg.setIcon(QtWidgets.QMessageBox.Critical)
             dlg.setWindowTitle("Error")
@@ -518,18 +539,18 @@ class Ui_MainWindow(object):
             dlg.setDetailedText(str(error))
             dlg.setStandardButtons(QtWidgets.QMessageBox.Ok)
             dlg.exec_()
-       
-    
+
+
     def close_application(self):
         print("closing")
         if (self.server is not None):
             self.handle_stop_start_server() # to close the server
             time.sleep(1)
         # if fc connection is still connected, disconnect
-        
+
         QtCore.QCoreApplication.quit()
 
-        
+
 
 
     def update_com_ports_combobox(self):
@@ -546,7 +567,7 @@ class Ui_MainWindow(object):
         if cube_index is not None:
             self.comboBox_com.setCurrentIndex(cube_index)
         return
-    
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Al-Suhaab HITL Tool"))
@@ -575,7 +596,7 @@ class Ui_MainWindow(object):
         self.label_ch3.setText(_translate("MainWindow", "Channel 3"))
         self.label_ch7.setText(_translate("MainWindow", "Channel 7"))
         self.pushButton_quit.setText(_translate("MainWindow", "Quit"))
-        
+
 
 
 import icons_rc
@@ -584,7 +605,7 @@ if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
     app.setStyle("Fusion")
-    MainWindow = QtWidgets.QMainWindow()    
+    MainWindow = QtWidgets.QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(MainWindow)
     MainWindow.show()
