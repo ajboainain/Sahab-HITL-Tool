@@ -454,6 +454,29 @@ class Ui_MainWindow(object):
             except:
                 pass
 
+    def wait_conn(self):
+        """
+        Sends a ping to stabilish the UDP communication and awaits for a response
+        """
+        msg = self.fc_connection.recv_match(timeout=5000)
+        if msg == None:
+            return False
+        # msg = None
+        # attempts = 0
+        # while not msg:
+        #     # self.fc_connection.mav.ping_send(
+        #     #     int(time.time() * 1e6), # Unix time in microseconds
+        #     #     0, # Ping number
+        #     #     0, # Request ping of all systems
+        #     #     0 # Request ping of all components
+        #     # )
+            
+        #     attempts += 1
+        #     if attempts == 3:
+        #         return False
+        #     time.sleep(0.5)
+        return True
+
     def handle_fc_connection(self):
         global com_ports
         if len(com_ports) == 0:
@@ -469,24 +492,11 @@ class Ui_MainWindow(object):
             self.fc_connection = mavutil.mavlink_connection(
                 com_ports[self.comboBox_com.currentIndex()]
             )
-            # self.fc_connection.wait_heartbeat()
-            print ("here 2")
-            # TODO fix FC connect/disconnect
-            msg = None
-            attempts = 0
-            while not msg:
-                self.fc_connection.mav.ping_send(
-                    int(time.time() * 1e6), # Unix time in microseconds
-                    0, # Ping number
-                    0, # Request ping of all systems
-                    0 # Request ping of all components
-                )
-                msg = self.fc_connection.recv_match()
-                attempts += 1
-                print(attempts)
-                if attempts == 3:
-                    raise Exception("Failed to connec to FC.")
-                time.sleep(0.5)
+
+            if self.fc_connection.recv_match(timeout=5000) is None:
+                raise Exception("Could not connect to flight controller.")
+            
+            self.fc_connection.wait_heartbeat()
 
             # arm the plane
             self.fc_connection.mav.command_long_send(
@@ -496,6 +506,9 @@ class Ui_MainWindow(object):
                 0,
                 1, 0, 0, 0, 0, 0, 0
             )
+
+            if self.fc_connection.recv_match(timeout=5000) is None:
+                raise Exception("Could not arm the flight controller.")
 
             self.fc_connection.motors_armed_wait()
 
@@ -544,7 +557,9 @@ class Ui_MainWindow(object):
     def close_application(self):
         print("closing")
         if (self.server is not None):
-            self.handle_stop_start_server() # to close the server
+            # self.handle_stop_start_server() # to close the server
+            self.server.stop_recieving()
+            self.server = None
             time.sleep(1)
         # if fc connection is still connected, disconnect
 
