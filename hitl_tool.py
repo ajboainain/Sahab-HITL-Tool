@@ -17,7 +17,6 @@ import ast
 import time
 from pymavlink import mavutil
 
-com_ports = []
 channels = [
     1100,
     1100,
@@ -51,9 +50,9 @@ class Server(QtCore.QObject):
         self.receive_data_thread = threading.Thread(target=self.recieve_data)
 
         # self.s.setblocking(0)
-        print("Starting a server")
-        print("IP: " + str(self.HOST))
-        print("Port: " + str(self.PORT))
+        # print("Starting a server")
+        # print("IP: " + str(self.HOST))
+        # print("Port: " + str(self.PORT))
 
     def start_recieving(self):
         self.recievingData = True
@@ -67,7 +66,6 @@ class Server(QtCore.QObject):
     def recieve_data(self):
         self.recievingData = True
         while self.recievingData:
-            # print("Waiting for data")
             try:
                 part = self.s.recv(self.BUFF_SIZE)
             except:
@@ -445,7 +443,7 @@ class Ui_MainWindow(object):
 
     def handle_fc_connection(self):
         global com_ports
-        if len(com_ports) == 0:
+        if self.comboBox_com.count() == 0:
             return
         if self.pushButton_com_connect.text() == "Disconnect":
             self.fc_connection.close()
@@ -455,12 +453,9 @@ class Ui_MainWindow(object):
             self.label_current_fc_status.setText("Not Connected")
             return
         try:
-            print("here")
             self.fc_connection = mavutil.mavlink_connection(
-                com_ports[self.comboBox_com.currentIndex()]
+                self.comboBox_com.currentText()
             )
-
-            print(type(self.fc_connection))
 
             # if self.fc_connection.recv_match(timeout=5000) is None:
             #     raise Exception("Could not connect to flight controller.")
@@ -510,7 +505,6 @@ class Ui_MainWindow(object):
             self.pushButton_com_connect.setText("Disconnect")
 
         except Exception as error:
-            print(error)
             self.label_current_fc_status.setStyleSheet("background-color: red")
             self.label_current_fc_status.setText("Failed")
             self.fc_connection = None
@@ -524,7 +518,6 @@ class Ui_MainWindow(object):
 
 
     def close_application(self):
-        print("closing")
         if (self.server is not None):
             self.server.stop_recieving()
             self.server = None
@@ -541,13 +534,10 @@ class Ui_MainWindow(object):
 
     def update_com_ports_combobox(self):
         ports = serial.tools.list_ports.comports()
-        global com_ports
-        com_ports.clear()
         self.comboBox_com.clear()
         cube_index = None
         for index, port in enumerate(ports):
-            com_ports.append(port.name)
-            self.comboBox_com.addItem(port.description)
+            self.comboBox_com.addItem(port.name)
             if ("cube" in port.description.lower()):
                 cube_index = index
         if cube_index is not None:
