@@ -383,7 +383,7 @@ class Ui_MainWindow(object):
         for pwm_bar in self.pwm_bars:
             pwm_bar.setMinimum(1100)
             pwm_bar.setMaximum(1900)
-            pwm_bar.setValue(1500)
+            pwm_bar.setValue(1100)
 
         self.update_com_ports_combobox()
         self.retranslateUi(MainWindow)
@@ -393,7 +393,7 @@ class Ui_MainWindow(object):
         self.pushButton_quit.clicked.connect(self.close_application) # type: ignore
 
         self.timer = QtCore.QTimer()
-        self.timer.setInterval(200)
+        self.timer.setInterval(30)
         self.timer.timeout.connect(self.update_channels)
         self.timer.start()
 
@@ -448,6 +448,7 @@ class Ui_MainWindow(object):
         if len(com_ports) == 0:
             return
         if self.pushButton_com_connect.text() == "Disconnect":
+            self.fc_connection.close()
             self.fc_connection = None
             self.pushButton_com_connect.setText("Connect")
             self.label_current_fc_status.setStyleSheet("")
@@ -458,6 +459,8 @@ class Ui_MainWindow(object):
             self.fc_connection = mavutil.mavlink_connection(
                 com_ports[self.comboBox_com.currentIndex()]
             )
+
+            print(type(self.fc_connection))
 
             # if self.fc_connection.recv_match(timeout=5000) is None:
             #     raise Exception("Could not connect to flight controller.")
@@ -523,11 +526,13 @@ class Ui_MainWindow(object):
     def close_application(self):
         print("closing")
         if (self.server is not None):
-            # self.handle_stop_start_server() # to close the server
             self.server.stop_recieving()
             self.server = None
-            time.sleep(1)
-        # if fc connection is still connected, disconnect
+        if self.fc_connection is not None:
+            self.fc_connection.close()
+            self.fc_connection = None
+
+        time.sleep(1)
 
         QtCore.QCoreApplication.quit()
 
