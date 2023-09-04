@@ -80,7 +80,7 @@ class Server(QtCore.QObject):
                 self.recievedData = ast.literal_eval(data.decode())
                 global channels
                 channels = self.recievedData
-                print(self.recievedData)
+                # print(self.recievedData)
             except:
                 self.recievedData = None
         return
@@ -366,6 +366,8 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
 
+        self.running = True
+
         self.pwm_bars.append(self.bar_ch1)
         self.pwm_bars.append(self.bar_ch2)
         self.pwm_bars.append(self.bar_ch3)
@@ -390,22 +392,29 @@ class Ui_MainWindow(object):
         self.pushButton_com_connect.clicked.connect(self.handle_fc_connection) # type: ignore
         self.pushButton_quit.clicked.connect(self.close_application) # type: ignore
 
-        self.timer = QtCore.QTimer()
-        self.timer.setInterval(30)
-        self.timer.timeout.connect(self.update_channels)
-        self.timer.start()
+        # self.timer = QtCore.QTimer()
+        # self.timer.setInterval(30)
+        # self.timer.timeout.connect(self.update_channels)
+        # self.timer.start()
+
+        self.update_channels_thread = threading.Thread(target=self.update_channels)
+        self.update_channels_thread.start()
 
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def update_channels(self):
         global channels
-        for i, bar in enumerate(self.pwm_bars):
-            pwm = int(channels[i])
-            if pwm == 0:
-                pwm = 1100
-            if self.fc_connection is not None:
-                self.fc_connection.set_servo(i+1, pwm)
-            bar.setValue(pwm)
+        while self.running:
+            for i, bar in enumerate(self.pwm_bars):
+                pwm = int(channels[i])
+                if i == 8:
+                    continue
+                if pwm == 0:
+                    pwm = 1100
+                if self.fc_connection is not None:
+                    self.fc_connection.set_servo(i+1, pwm)
+                bar.setValue(pwm)
+            # time.sleep(0.8)
 
 
     def handle_stop_start_server(self):
@@ -463,10 +472,10 @@ class Ui_MainWindow(object):
             # 4) Nice to have: Reset back to original settings before closing
             # Will need a better understanding of this mavutil library
 
-            # if self.fc_connection.recv_match(timeout=5000) is None:
-            #     raise Exception("Could not connect to flight controller.")
 
-            self.fc_connection.wait_heartbeat()
+            connected = self.fc_connection.wait_heartbeat(timeout=5)
+            if connected is None:
+                raise Exception("Could not connect on this COM port.")
 
             # arm the plane
             # self.fc_connection.mav.command_long_send(
@@ -524,12 +533,14 @@ class Ui_MainWindow(object):
 
 
     def close_application(self):
+        self.running = False
         if (self.server is not None):
             self.server.stop_recieving()
             self.server = None
         if self.fc_connection is not None:
             self.fc_connection.close()
             self.fc_connection = None
+        self.update_channels_thread.join()
 
         time.sleep(1)
 
