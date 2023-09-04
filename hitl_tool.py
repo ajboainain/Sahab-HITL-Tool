@@ -93,7 +93,7 @@ class Server(QtCore.QObject):
                 self.recievedData = ast.literal_eval(data.decode())
                 global channels
                 channels = self.recievedData
-                # print(self.recievedData)
+                print(self.recievedData)
             except:
                 self.recievedData = None
         return
@@ -470,7 +470,7 @@ class Ui_MainWindow(object):
         #     #     0, # Request ping of all systems
         #     #     0 # Request ping of all components
         #     # )
-            
+
         #     attempts += 1
         #     if attempts == 3:
         #         return False
@@ -493,33 +493,33 @@ class Ui_MainWindow(object):
                 com_ports[self.comboBox_com.currentIndex()]
             )
 
-            if self.fc_connection.recv_match(timeout=5000) is None:
-                raise Exception("Could not connect to flight controller.")
-            
+            # if self.fc_connection.recv_match(timeout=5000) is None:
+            #     raise Exception("Could not connect to flight controller.")
+
             self.fc_connection.wait_heartbeat()
 
             # arm the plane
-            self.fc_connection.mav.command_long_send(
-                self.fc_connection.target_system,
-                self.fc_connection.target_component,
-                mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                0,
-                1, 0, 0, 0, 0, 0, 0
-            )
+            # self.fc_connection.mav.command_long_send(
+            #     self.fc_connection.target_system,
+            #     self.fc_connection.target_component,
+            #     mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            #     0,
+            #     1, 0, 0, 0, 0, 0, 0
+            # )
 
-            if self.fc_connection.recv_match(timeout=5000) is None:
-                raise Exception("Could not arm the flight controller.")
+            # if self.fc_connection.recv_match(timeout=5000) is None:
+            #     raise Exception("Could not arm the flight controller.")
 
-            self.fc_connection.motors_armed_wait()
+            # self.fc_connection.motors_armed_wait()
 
             # Get mode ID
-            mode_id = self.fc_connection.mode_mapping()["MANUAL"]
-            # Set mode to manual
-            self.fc_connection.mav.set_mode_send(
-                self.fc_connection.target_system,
-                mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-                mode_id
-            )
+            # mode_id = self.fc_connection.mode_mapping()["MANUAL"]
+            # # Set mode to manual
+            # self.fc_connection.mav.set_mode_send(
+            #     self.fc_connection.target_system,
+            #     mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+            #     mode_id
+            # )
             # Find a better non-blocking way to do this. Separate thread?
             # while True:
             #     # Wait for ACK command
