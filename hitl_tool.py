@@ -47,8 +47,6 @@ class Server(QtCore.QObject):
         self.recievingData = False
         self.recievedData = None
 
-        self.update_fc_thread = threading.Thread(target=self.update_fc)
-        self.update_fc_thread.start()
 
         self.receive_data_thread = threading.Thread(target=self.recieve_data)
 
@@ -64,16 +62,7 @@ class Server(QtCore.QObject):
 
     def stop_recieving(self):
         self.recievingData = False
-        self.update_fc_thread.join()
         self.s.close()
-
-    def update_fc(self):
-        self.recievingData = True
-        while self.recievingData:
-            if((self.recievedData is not None) and self.fc_connection is not None):
-                for i, pwm in enumerate(self.recievedData):
-                    self.fc_connection.set_servo(i+1, pwm)
-        return
 
     def recieve_data(self):
         self.recievingData = True
@@ -453,29 +442,6 @@ class Ui_MainWindow(object):
                 print("Stopped server")
             except:
                 pass
-
-    def wait_conn(self):
-        """
-        Sends a ping to stabilish the UDP communication and awaits for a response
-        """
-        msg = self.fc_connection.recv_match(timeout=5000)
-        if msg == None:
-            return False
-        # msg = None
-        # attempts = 0
-        # while not msg:
-        #     # self.fc_connection.mav.ping_send(
-        #     #     int(time.time() * 1e6), # Unix time in microseconds
-        #     #     0, # Ping number
-        #     #     0, # Request ping of all systems
-        #     #     0 # Request ping of all components
-        #     # )
-
-        #     attempts += 1
-        #     if attempts == 3:
-        #         return False
-        #     time.sleep(0.5)
-        return True
 
     def handle_fc_connection(self):
         global com_ports
