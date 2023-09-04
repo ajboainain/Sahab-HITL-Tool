@@ -7,3 +7,5 @@ test.py
 test3.py
 _pycache_
 _pycache_/*
+build/*
+dist/*

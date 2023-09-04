@@ -442,7 +442,6 @@ class Ui_MainWindow(object):
                 pass
 
     def handle_fc_connection(self):
-        global com_ports
         if self.comboBox_com.count() == 0:
             return
         if self.pushButton_com_connect.text() == "Disconnect":
