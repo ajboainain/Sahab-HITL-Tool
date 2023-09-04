@@ -456,6 +456,13 @@ class Ui_MainWindow(object):
                 self.comboBox_com.currentText()
             )
 
+            # TODO Make this application more robust by achieving the following:
+            # 1) If not armed, arm the plane.
+            # 2) If not on MANUAL mode, switch to MANUAL mode
+            # 3) If RC channels 1-12 are not RC-PASSTHROUGH, make them RC-PASSTHROUGH
+            # 4) Nice to have: Reset back to original settings before closing
+            # Will need a better understanding of this mavutil library
+
             # if self.fc_connection.recv_match(timeout=5000) is None:
             #     raise Exception("Could not connect to flight controller.")
 
