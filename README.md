@@ -8,3 +8,6 @@
 6) Finally, run the file hitl_tool.py: python hitl_tool.py
 
 7) On Mission Planner, run the script "hitl_client.py" fron the "scripts" tab.
+
+NOTE: the flight controller must automatically set itself
+to armed, and channels 1-12 must all be "RC-PASSTHROUGH".
