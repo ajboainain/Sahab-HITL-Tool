@@ -416,11 +416,11 @@ class Ui_MainWindow(object):
 
                 bar.setValue(pwm)
             if self.fc_connection is not None:
-                channels2 = [int(x) for x in channels]
+                # channels2 = [int(x) for x in channels]
                 self.fc_connection.mav.rc_channels_override_send(
                     self.fc_connection.target_system,
                     self.fc_connection.target_component,
-                    *channels2[:-4]
+                    *channels[:-4]
                 )
             # time.sleep()
 
