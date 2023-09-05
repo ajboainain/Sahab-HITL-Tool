@@ -4,7 +4,7 @@ import time
 
 class Client:
 
-    def __init__(self, HOST="127.0.0.1", PORT=9077):
+    def __init__(self, HOST="127.0.0.1", PORT=9078):
         self.s = socket.socket(type=SOCK_DGRAM)
         self.s.connect((HOST, PORT))
         self.HOST = HOST

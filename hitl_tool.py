@@ -16,6 +16,7 @@ import serial.tools.list_ports
 import ast
 import time
 from pymavlink import mavutil
+import os
 
 channels = [
     1100,
@@ -34,7 +35,7 @@ channels = [
 
 class Server(QtCore.QObject):
 
-    def __init__(self, PORT=9077):
+    def __init__(self, PORT=9078):
         self.fc_connection = None
         self.s = socket.socket(type=SOCK_DGRAM)
         self.HOST = '127.0.0.1'
@@ -407,14 +408,21 @@ class Ui_MainWindow(object):
         while self.running:
             for i, bar in enumerate(self.pwm_bars):
                 pwm = int(channels[i])
-                if i == 8:
-                    continue
                 if pwm == 0:
                     pwm = 1100
-                if self.fc_connection is not None:
-                    self.fc_connection.set_servo(i+1, pwm)
+                    channels[i] = 1100
+                    # if self.fc_connection is not None:
+                    #     self.fc_connection.set_servo(i+1, pwm)
+
                 bar.setValue(pwm)
-            # time.sleep(0.8)
+            if self.fc_connection is not None:
+                channels2 = [int(x) for x in channels]
+                self.fc_connection.mav.rc_channels_override_send(
+                    self.fc_connection.target_system,
+                    self.fc_connection.target_component,
+                    *channels2[:-4]
+                )
+            # time.sleep()
 
 
     def handle_stop_start_server(self):
@@ -451,6 +459,7 @@ class Ui_MainWindow(object):
                 pass
 
     def handle_fc_connection(self):
+
         if self.comboBox_com.count() == 0:
             return
         if self.pushButton_com_connect.text() == "Disconnect":
@@ -462,8 +471,7 @@ class Ui_MainWindow(object):
             return
         try:
             self.fc_connection = mavutil.mavlink_connection(
-                self.comboBox_com.currentText()
-            )
+                self.comboBox_com.currentText())
 
             # TODO Make this application more robust by achieving the following:
             # 1) If not armed, arm the plane.
@@ -566,8 +574,8 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Al-Suhaab HITL Tool"))
         self.label_server.setText(_translate("MainWindow", "Server"))
         self.label_port.setText(_translate("MainWindow", "PORT"))
-        self.lineEdit_port.setText(_translate("MainWindow", "9077"))
-        self.lineEdit_port.setPlaceholderText(_translate("MainWindow", "9077"))
+        self.lineEdit_port.setText(_translate("MainWindow", "9078"))
+        self.lineEdit_port.setPlaceholderText(_translate("MainWindow", ""))
         self.pushButton_start_server.setText(_translate("MainWindow", "Start"))
         self.label_server_status.setText(_translate("MainWindow", "Server Status:"))
         self.label_current_server_status.setText(_translate("MainWindow", "Not Started"))
