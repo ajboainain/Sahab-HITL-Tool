@@ -78,7 +78,7 @@ class Server(QtCore.QObject):
                 data += part
             self.lastData = data
             try:
-                self.recievedData = ast.literal_eval(data.decode())
+                self.recievedData = [int(x) for x in ast.literal_eval(data.decode())]
                 global channels
                 channels = self.recievedData
                 # print(self.recievedData)
@@ -422,7 +422,7 @@ class Ui_MainWindow(object):
                     self.fc_connection.target_component,
                     *channels[:-4]
                 )
-            # time.sleep()
+            time.sleep(0.1)
 
 
     def handle_stop_start_server(self):
