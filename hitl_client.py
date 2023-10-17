@@ -1,39 +1,40 @@
 import socket
 from socket import SOCK_DGRAM
-import time
 
-class Client:
+HOST="127.0.0.1"
+PORT=9078
+socket = socket.socket()
 
-    def __init__(self, HOST="127.0.0.1", PORT=9078):
-        self.s = socket.socket(type=SOCK_DGRAM)
-        self.s.connect((HOST, PORT))
-        self.HOST = HOST
-        self.PORT = PORT
-
-    def send_message(self, message):
-        self.s.send(str(message).encode())
-        # self.s.sendto(str(message).encode(), (self.HOST, self.PORT))
-
-
-client = Client()
+def attempt_connection():
+    while True:
+        try: 
+            socket.connect((HOST, PORT))
+            break
+        except:
+            continue # try again
 
 while True:
-    client.send_message(
-        str(
-            [
-                cs.ch1out,
-                cs.ch2out,
-                cs.ch3out,
-                cs.ch4out,
-                cs.ch5out,
-                cs.ch6out,
-                cs.ch7out,
-                cs.ch8out,
-                cs.ch9out,
-                cs.ch10out,
-                cs.ch11out,
-                cs.ch12out
-                ]
-            )
-        )
-    # time.sleep(0.1)
+        try:
+            data = socket.recv(1024).decode()
+            if not data:
+                break
+            if data == 'ok':
+                socket.sendall(str(
+                [
+                    cs.ch1out,
+                    cs.ch2out,
+                    cs.ch3out,
+                    cs.ch4out,
+                    cs.ch5out,
+                    cs.ch6out,
+                    cs.ch7out,
+                    cs.ch8out,
+                    cs.ch9out,
+                    cs.ch10out,
+                    cs.ch11out,
+                    cs.ch12out
+                    ]
+                ).encode())
+        except:
+             attempt_connection()
+        

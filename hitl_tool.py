@@ -33,20 +33,22 @@ channels = [
     1100,
 ]
 
+
 class Server(QtCore.QObject):
 
     def __init__(self, PORT=9078):
         self.fc_connection = None
-        self.s = socket.socket(type=SOCK_DGRAM)
+        self.s = socket.socket()
         self.HOST = '127.0.0.1'
         self.PORT = PORT
-        self.MAX_CONNECTIONS = 1
-        self.BUFF_SIZE = 1024
+        self.MAX_CONNECTIONS = 16
+        self.BUFF_SIZE = 256
         self.s.bind((self.HOST, self.PORT))
-        # self.s.listen(self.MAX_CONNECTIONS)
+        self.s.listen(self.MAX_CONNECTIONS)
         self.recievingData = False
         self.recievedData = None
-
+        self.counter=0
+        self.conn = None
 
         self.receive_data_thread = threading.Thread(target=self.recieve_data)
 
@@ -58,23 +60,47 @@ class Server(QtCore.QObject):
     def start_recieving(self):
         self.recievingData = True
         self.recievedData = None
+        
         self.receive_data_thread.start()
 
     def stop_recieving(self):
         self.recievingData = False
+    
+    def kill_server(self):
         self.s.close()
+        if self.conn is not None:
+            self.conn.close()
+        
+    def establish_two_way_conn(self):
+        self.conn, self.addr = self.s.accept()
+        print("accepted new client: ", self.addr)
+        self.conn.settimeout(1)
+        while True:
+            try:
+                self.conn.sendall(b'ok')
+                break
+            except:
+                continue
 
     def recieve_data(self):
+        
+        
         self.recievingData = True
+
+        self.establish_two_way_conn()
+        
         while self.recievingData:
-            try:
-                part = self.s.recv(self.BUFF_SIZE)
+            try: 
+                part = self.conn.recv(self.BUFF_SIZE)
             except:
-                return
+                self.establish_two_way_conn()
             data = b''
             data += part
+            # print(data)
+            if len(data) == 0:
+                continue
             while (len(part) > self.BUFF_SIZE) and (self.recievingData):
-                part = self.s.recv(self.BUFF_SIZE)
+                part = self.conn.recv(self.BUFF_SIZE)
                 data += part
             self.lastData = data
             try:
@@ -82,9 +108,10 @@ class Server(QtCore.QObject):
                 global channels
                 channels = self.recievedData
                 # print(self.recievedData)
+                self.conn.sendall(b'ok')
             except:
                 self.recievedData = None
-        return
+        
 
 class Ui_MainWindow(object):
 
@@ -422,9 +449,8 @@ class Ui_MainWindow(object):
                     self.fc_connection.target_component,
                     *channels[:-4]
                 )
-            time.sleep(0.1)
-
-
+            # time.sleep(0.10)
+            
     def handle_stop_start_server(self):
         if self.lineEdit_port.text() == "":
             return
@@ -544,6 +570,7 @@ class Ui_MainWindow(object):
         self.running = False
         if (self.server is not None):
             self.server.stop_recieving()
+            self.server.kill_server()
             self.server = None
         if self.fc_connection is not None:
             self.fc_connection.close()
