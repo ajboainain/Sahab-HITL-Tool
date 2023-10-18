@@ -74,7 +74,7 @@ class Server(QtCore.QObject):
     def establish_two_way_conn(self):
         self.conn, self.addr = self.s.accept()
         print("accepted new client: ", self.addr)
-        self.conn.settimeout(1)
+        self.conn.settimeout(2)
         while True:
             try:
                 self.conn.sendall(b'ok')
@@ -476,6 +476,7 @@ class Ui_MainWindow(object):
         else:
             try:
                 self.server.stop_recieving()
+                self.server.kill_server()
                 self.server = None
                 self.label_current_server_status.setText("Not Started")
                 self.label_current_server_status.setStyleSheet("")
@@ -577,7 +578,7 @@ class Ui_MainWindow(object):
             self.fc_connection = None
         self.update_channels_thread.join()
 
-        time.sleep(1)
+        # time.sleep(1)
 
         QtCore.QCoreApplication.quit()
 

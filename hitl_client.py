@@ -4,6 +4,7 @@ from socket import SOCK_DGRAM
 HOST="127.0.0.1"
 PORT=9078
 socket = socket.socket()
+socket.settimeout(0.5)
 
 def attempt_connection():
     while True:
