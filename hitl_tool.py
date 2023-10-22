@@ -562,7 +562,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "Al-Suhaab HITL Tool"))
         self.label_server.setText(_translate("MainWindow", "Server"))
         self.label_port.setText(_translate("MainWindow", "PORT"))
-        self.lineEdit_port.setText(_translate("MainWindow", "9078"))
+        self.lineEdit_port.setText(_translate("MainWindow", "5052"))
         self.lineEdit_port.setPlaceholderText(_translate("MainWindow", ""))
         self.pushButton_start_server.setText(_translate("MainWindow", "Start"))
         self.label_server_status.setText(_translate("MainWindow", "Server Status:"))
