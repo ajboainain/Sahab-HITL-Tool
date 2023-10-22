@@ -17,7 +17,10 @@
     - Port 5052 (or whatever you choose, as long as it's not taken)
     - Host/Baud: 127.0.0.1
 10) Hit "Go"
-
+11) For faster refresh rate, go to:
+    - CONFIG tab
+    - Planner side tab
+    - "Telemetry Rates" -> "RC" = desired value (higher is better)
 
 NOTE: the flight controller must automatically set itself
 to armed, and channels 1-12 must all be "RC-PASSTHROUGH".
