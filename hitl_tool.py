@@ -32,8 +32,6 @@ channels = [
 class Server(QtCore.QObject):
 
     def __init__(self, PORT=5052):
-        self.fc_connection = None
-        self.HOST = '127.0.0.1'
         self.PORT = PORT
         self.mav = mavutil.mavlink_connection('udp:localhost:' + str(self.PORT))
         
@@ -42,11 +40,6 @@ class Server(QtCore.QObject):
 
 
         self.receive_data_thread = threading.Thread(target=self.recieve_data)
-
-        # self.s.setblocking(0)
-        # print("Starting a server")
-        # print("IP: " + str(self.HOST))
-        # print("Port: " + str(self.PORT))
 
     def start_recieving(self):
         self.recievingData = True
@@ -66,7 +59,7 @@ class Server(QtCore.QObject):
             if  msg:
                 for i in range(12):
                     channels_in.append(msg.to_dict()['servo'+str(i+1)+'_raw'])
-                # print(channels_in)
+
             try:
                 global channels
                 channels = channels_in
@@ -389,17 +382,18 @@ class Ui_MainWindow(object):
     def update_channels(self):
         global channels
         while self.running:
-            for i, bar in enumerate(self.pwm_bars):
-                pwm = int(channels[i])
-                if pwm == 0:
-                    pwm = -1
-                    channels[i] = 0
-                    # if self.fc_connection is not None:
-                    #     self.fc_connection.set_servo(i+1, pwm)
-                bar.setValue(pwm)
-                # print("set bar ", i, "to", pwm)
+            if self.server is not None:
+                for i, bar in enumerate(self.pwm_bars):
+                    pwm = int(channels[i])
+                    if pwm == 0:
+                        pwm = -1
+                        channels[i] = 0
+                        # if self.fc_connection is not None:
+                        #     self.fc_connection.set_servo(i+1, pwm)
+                    bar.setValue(pwm)
+
             if self.fc_connection is not None:
-                # channels2 = [int(x) for x in channels]
+
                 self.fc_connection.mav.rc_channels_override_send(
                     self.fc_connection.target_system,
                     self.fc_connection.target_component,
@@ -407,9 +401,14 @@ class Ui_MainWindow(object):
                 )
             
     def handle_stop_start_server(self):
-        if self.lineEdit_port.text() == "":
+        if self.lineEdit_port.text() == "" or self.lineEdit_port.text() == None:
+            dlg = QtWidgets.QMessageBox()
+            dlg.setIcon(QtWidgets.QMessageBox.Information)
+            dlg.setWindowTitle("Oops!")
+            dlg.setText("You must provide a port to use.")
+            dlg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+            dlg.exec_()
             return
-
         if self.pushButton_start_server.text() == "Start":
             try:
                 self.server = Server(int(self.lineEdit_port.text()))
@@ -435,7 +434,7 @@ class Ui_MainWindow(object):
                 self.label_current_server_status.setText("Not Started")
                 self.label_current_server_status.setStyleSheet("")
                 self.pushButton_start_server.setText("Start")
-                print("Stopped server")
+
             except:
                 pass
 
@@ -454,56 +453,10 @@ class Ui_MainWindow(object):
             self.fc_connection = mavutil.mavlink_connection(
                 self.comboBox_com.currentText())
 
-            # TODO Make this application more robust by achieving the following:
-            # 1) If not armed, arm the plane.
-            # 2) If not on MANUAL mode, switch to MANUAL mode
-            # 3) If RC channels 1-12 are not RC-PASSTHROUGH, make them RC-PASSTHROUGH
-            # 4) Nice to have: Reset back to original settings before closing
-            # Will need a better understanding of this mavutil library
-
-
-            connected = self.fc_connection.wait_heartbeat(timeout=5)
+            connected = self.fc_connection.wait_heartbeat(timeout=3)
             if connected is None:
                 raise Exception("Could not connect on this COM port.")
 
-            # arm the plane
-            # self.fc_connection.mav.command_long_send(
-            #     self.fc_connection.target_system,
-            #     self.fc_connection.target_component,
-            #     mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-            #     0,
-            #     1, 0, 0, 0, 0, 0, 0
-            # )
-
-            # if self.fc_connection.recv_match(timeout=5000) is None:
-            #     raise Exception("Could not arm the flight controller.")
-
-            # self.fc_connection.motors_armed_wait()
-
-            # Get mode ID
-            # mode_id = self.fc_connection.mode_mapping()["MANUAL"]
-            # # Set mode to manual
-            # self.fc_connection.mav.set_mode_send(
-            #     self.fc_connection.target_system,
-            #     mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-            #     mode_id
-            # )
-            # Find a better non-blocking way to do this. Separate thread?
-            # while True:
-            #     # Wait for ACK command
-            #     # Would be good to add mechanism to avoid endlessly blocking
-            #     # if the autopilot sends a NACK or never receives the message
-            #     ack_msg = self.fc_connection.recv_match(type='COMMAND_ACK', blocking=True)
-            #     ack_msg = ack_msg.to_dict()
-
-            #     # Continue waiting if the acknowledged command is not `set_mode`
-            #     if ack_msg['command'] != mavutil.mavlink.MAV_CMD_DO_SET_MODE:
-            #         continue
-
-            #     # Print the ACK result !
-            #     print(mavutil.mavlink.enums['MAV_RESULT'][ack_msg['result']].description)
-            #     print("Set to manual mode")
-            #     break
             self.label_current_fc_status.setStyleSheet("background-color: green")
             self.label_current_fc_status.setText("Connected")
             self.pushButton_com_connect.setText("Disconnect")
