@@ -31,7 +31,7 @@ channels = [
 
 class Server(QtCore.QObject):
 
-    def __init__(self, PORT=9078):
+    def __init__(self, PORT=5052):
         self.fc_connection = None
         self.HOST = '127.0.0.1'
         self.PORT = PORT
