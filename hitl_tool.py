@@ -14,18 +14,18 @@ import serial.tools.list_ports
 from pymavlink import mavutil
 
 channels = [
-    1100,
-    1100,
-    1100,
-    1100,
-    1100,
-    1100,
-    1100,
-    1100,
-    1100,
-    1100,
-    1100,
-    1100,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
+    -1,
 ]
 
 
@@ -371,9 +371,8 @@ class Ui_MainWindow(object):
         self.pwm_bars.append(self.bar_ch11)
         self.pwm_bars.append(self.bar_ch12)
         for pwm_bar in self.pwm_bars:
-            pwm_bar.setMinimum(1100)
-            pwm_bar.setMaximum(1900)
-            pwm_bar.setValue(1100)
+            pwm_bar.setMinimum(800)
+            pwm_bar.setMaximum(2100)
 
         self.update_com_ports_combobox()
         self.retranslateUi(MainWindow)
@@ -381,11 +380,6 @@ class Ui_MainWindow(object):
         self.pushButton_start_server.clicked.connect(self.handle_stop_start_server) # type: ignore
         self.pushButton_com_connect.clicked.connect(self.handle_fc_connection) # type: ignore
         self.pushButton_quit.clicked.connect(self.close_application) # type: ignore
-
-        # self.timer = QtCore.QTimer()
-        # self.timer.setInterval(30)
-        # self.timer.timeout.connect(self.update_channels)
-        # self.timer.start()
 
         self.update_channels_thread = threading.Thread(target=self.update_channels)
         self.update_channels_thread.start()
@@ -398,8 +392,8 @@ class Ui_MainWindow(object):
             for i, bar in enumerate(self.pwm_bars):
                 pwm = int(channels[i])
                 if pwm == 0:
-                    pwm = 1100
-                    channels[i] = 1100
+                    pwm = -1
+                    channels[i] = 0
                     # if self.fc_connection is not None:
                     #     self.fc_connection.set_servo(i+1, pwm)
                 bar.setValue(pwm)
