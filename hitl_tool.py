@@ -9,14 +9,9 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-import socket
-from socket import SOCK_DGRAM, SO_REUSEADDR
 import threading
 import serial.tools.list_ports
-import ast
-import time
 from pymavlink import mavutil
-import os
 
 channels = [
     1100,
