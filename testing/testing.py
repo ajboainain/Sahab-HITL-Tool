@@ -19,6 +19,3 @@ while True:
 
     if  msg:
         print(msg.to_dict())
-    
-    for i in range(12):
-        print(i, msg.to_dict()['servo'+str(i+1)+'_raw'])
