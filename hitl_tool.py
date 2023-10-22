@@ -416,7 +416,6 @@ class Ui_MainWindow(object):
                     self.fc_connection.target_component,
                     *channels
                 )
-            # time.sleep(0.10)
             
     def handle_stop_start_server(self):
         if self.lineEdit_port.text() == "":
@@ -544,12 +543,7 @@ class Ui_MainWindow(object):
             self.fc_connection = None
         self.update_channels_thread.join()
 
-        # time.sleep(1)
-
         QtCore.QCoreApplication.quit()
-
-
-
 
     def update_com_ports_combobox(self):
         ports = serial.tools.list_ports.comports()
