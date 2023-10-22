@@ -38,17 +38,13 @@ class Server(QtCore.QObject):
 
     def __init__(self, PORT=9078):
         self.fc_connection = None
-        self.s = socket.socket()
         self.HOST = '127.0.0.1'
         self.PORT = PORT
-        self.MAX_CONNECTIONS = 16
-        self.BUFF_SIZE = 256
-        self.s.bind((self.HOST, self.PORT))
-        self.s.listen(self.MAX_CONNECTIONS)
+        self.mav = mavutil.mavlink_connection('udp:localhost:' + str(self.PORT))
+        
         self.recievingData = False
         self.recievedData = None
-        self.counter=0
-        self.conn = None
+
 
         self.receive_data_thread = threading.Thread(target=self.recieve_data)
 
@@ -60,55 +56,26 @@ class Server(QtCore.QObject):
     def start_recieving(self):
         self.recievingData = True
         self.recievedData = None
-        
         self.receive_data_thread.start()
 
     def stop_recieving(self):
         self.recievingData = False
-    
-    def kill_server(self):
-        self.s.close()
-        if self.conn is not None:
-            self.conn.close()
-        
-    def establish_two_way_conn(self):
-        self.conn, self.addr = self.s.accept()
-        print("accepted new client: ", self.addr)
-        self.conn.settimeout(2)
-        while True:
-            try:
-                self.conn.sendall(b'ok')
-                break
-            except:
-                continue
+        self.mav.close()
 
     def recieve_data(self):
-        
-        
         self.recievingData = True
-
-        self.establish_two_way_conn()
         
         while self.recievingData:
-            try: 
-                part = self.conn.recv(self.BUFF_SIZE)
-            except:
-                self.establish_two_way_conn()
-            data = b''
-            data += part
-            # print(data)
-            if len(data) == 0:
-                continue
-            while (len(part) > self.BUFF_SIZE) and (self.recievingData):
-                part = self.conn.recv(self.BUFF_SIZE)
-                data += part
-            self.lastData = data
+            msg = self.mav.recv_match(type="SERVO_OUTPUT_RAW", blocking=True)
+            channels_in = []
+            if  msg:
+                for i in range(12):
+                    channels_in.append(msg.to_dict()['servo'+str(i+1)+'_raw'])
+                # print(channels_in)
             try:
-                self.recievedData = [int(x) for x in ast.literal_eval(data.decode())]
                 global channels
-                channels = self.recievedData
-                # print(self.recievedData)
-                self.conn.sendall(b'ok')
+                channels = channels_in
+                self.receivedData = channels_in
             except:
                 self.recievedData = None
         
@@ -440,14 +407,14 @@ class Ui_MainWindow(object):
                     channels[i] = 1100
                     # if self.fc_connection is not None:
                     #     self.fc_connection.set_servo(i+1, pwm)
-
                 bar.setValue(pwm)
+                # print("set bar ", i, "to", pwm)
             if self.fc_connection is not None:
                 # channels2 = [int(x) for x in channels]
                 self.fc_connection.mav.rc_channels_override_send(
                     self.fc_connection.target_system,
                     self.fc_connection.target_component,
-                    *channels[:-4]
+                    *channels
                 )
             # time.sleep(0.10)
             
@@ -476,7 +443,6 @@ class Ui_MainWindow(object):
         else:
             try:
                 self.server.stop_recieving()
-                self.server.kill_server()
                 self.server = None
                 self.label_current_server_status.setText("Not Started")
                 self.label_current_server_status.setStyleSheet("")
